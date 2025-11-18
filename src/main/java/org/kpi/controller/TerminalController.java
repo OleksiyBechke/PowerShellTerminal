@@ -2,30 +2,44 @@ package org.kpi.controller;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import org.kpi.service.PowerShellSession;
+import org.kpi.pattern.interpreter.SyntaxHighlighter; // Імпортуємо наш новий клас
 
 public class TerminalController {
 
     @FXML
-    private TextArea outputArea;
+    private TextFlow outputFlow;
+
+    @FXML
+    private ScrollPane scrollPane;
 
     @FXML
     private TextField inputField;
 
     private PowerShellSession session;
+    private SyntaxHighlighter highlighter; // Додаємо поле парсера
 
     @FXML
     public void initialize() {
-        // Ініціалізуємо сесію
         session = new PowerShellSession();
+        highlighter = new SyntaxHighlighter(); // Ініціалізуємо парсер
 
-        // Підписуємось на отримання тексту
         session.setOutputHandler(text -> {
-            // Оновлюємо інтерфейс у головному потоці JavaFX
             Platform.runLater(() -> {
-                outputArea.appendText(text + "\n");
+                // 1. Визначаємо колір через патерн Interpreter
+                Color color = highlighter.determineColor(text);
+
+                // 2. Якщо це помилка, прибираємо технічний префікс [ERROR] для краси
+                String displayText = text.replace("[ERROR] ", "") + "\n";
+
+                // 3. Виводимо
+                appendColoredText(displayText, color);
             });
         });
     }
@@ -33,20 +47,20 @@ public class TerminalController {
     @FXML
     public void onEnterPressed() {
         String command = inputField.getText();
-
-        // Відображаємо введену команду
-        outputArea.appendText("> " + command + "\n");
-
-        // Виконуємо команду
+        appendColoredText("> " + command + "\n", Color.LIGHTGREEN); // Команди користувача завжди зелені
         session.execute(command);
-
-        // Очищаємо поле вводу
         inputField.clear();
     }
 
+    private void appendColoredText(String content, Color color) {
+        Text textNode = new Text(content);
+        textNode.setFill(color);
+        textNode.setFont(Font.font("Consolas", 14));
+        outputFlow.getChildren().add(textNode);
+        scrollPane.setVvalue(1.0);
+    }
+
     public void shutdown() {
-        if (session != null) {
-            session.close();
-        }
+        if (session != null) session.close();
     }
 }

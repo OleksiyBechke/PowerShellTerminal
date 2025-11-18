@@ -1,34 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.TextFlow?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="org.kpi.controller.TerminalController"
-            prefHeight="600.0" prefWidth="900.0">
+            prefHeight="600.0" prefWidth="900.0"
+            style="-fx-background-color: #1e1e1e;"> <center>
+    <ScrollPane fx:id="scrollPane" fitToWidth="true"
+                style="-fx-background: #1e1e1e; -fx-background-color: #1e1e1e; -fx-border-color: transparent;">
+        <content>
+            <VBox fx:id="mainContainer" style="-fx-background-color: #1e1e1e; -fx-padding: 10;">
+                <TextFlow fx:id="outputFlow" style="-fx-background-color: #1e1e1e;" />
 
-    <center>
-        <ScrollPane fx:id="scrollPane" fitToWidth="true"
-                    style="-fx-background: black; -fx-background-color: black;">
-            <content>
-                <TextFlow fx:id="outputFlow"
-                          style="-fx-background-color: black; -fx-padding: 10;" />
-            </content>
-        </ScrollPane>
-    </center>
-
-    <bottom>
-        <TextField fx:id="inputField" onAction="#onEnterPressed"
-                   style="-fx-background-color: #333; -fx-text-fill: white; -fx-border-color: #555;"
-                   promptText="Введіть команду...">
-            <font>
-                <Font name="Consolas" size="14.0"/>
-            </font>
-        </TextField>
-    </bottom>
+            </VBox>
+        </content>
+    </ScrollPane>
+</center>
 
 </BorderPane>

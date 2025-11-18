@@ -1,24 +1,38 @@
 package org.kpi;
 
-import org.kpi.service.PowerShellSession;
-import java.util.Scanner;
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+import org.kpi.controller.TerminalController;
 
-public class Main {
-    public static void main(String[] args) {
-        PowerShellSession session = new PowerShellSession();
-        Scanner scanner = new Scanner(System.in);
+import java.io.IOException;
 
-        System.out.println("Термінал готовий. Введіть команду (наприклад 'dir'):");
+public class Main extends Application {
 
-        while (true) {
-            String input = scanner.nextLine();
+    private TerminalController controller;
 
-            if ("exit".equalsIgnoreCase(input)) {
-                session.close();
-                break;
-            }
+    @Override
+    public void start(Stage stage) throws IOException {
+        FXMLLoader fxmlLoader = new FXMLLoader(Main.class.getResource("/org/kpi/view/terminal.fxml"));
+        Scene scene = new Scene(fxmlLoader.load());
 
-            session.execute(input);
+        controller = fxmlLoader.getController();
+
+        stage.setTitle("KPI PowerShell Terminal");
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    @Override
+    public void stop() throws Exception {
+        if (controller != null) {
+            controller.shutdown();
         }
+        super.stop();
+    }
+
+    public static void main(String[] args) {
+        launch();
     }
 }

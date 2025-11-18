@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="org.kpi.controller.TerminalController"
+            prefHeight="600.0" prefWidth="900.0">
+
+    <center>
+        <TextArea fx:id="outputArea" editable="false" wrapText="true"
+                  style="-fx-control-inner-background: black; -fx-text-fill: lightgrey;">
+            <font>
+                <Font name="Consolas" size="14.0"/>
+            </font>
+        </TextArea>
+    </center>
+
+    <bottom>
+        <TextField fx:id="inputField" onAction="#onEnterPressed"
+                   style="-fx-background-color: #333; -fx-text-fill: white; -fx-border-color: #555;"
+                   promptText="Введіть команду тут...">
+            <font>
+                <Font name="Consolas" size="14.0"/>
+            </font>
+        </TextField>
+    </bottom>
+
+</BorderPane>

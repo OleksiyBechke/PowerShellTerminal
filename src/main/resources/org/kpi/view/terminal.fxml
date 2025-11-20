@@ -4,20 +4,23 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.TextFlow?>
-
+<?import javafx.scene.control.MenuBar?>
 <BorderPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="org.kpi.controller.TerminalController"
-            prefHeight="600.0" prefWidth="900.0"
-            stylesheets="@styles.css"> <center>
-    <ScrollPane fx:id="scrollPane" fitToWidth="true">
-        <content>
-            <VBox fx:id="mainContainer" style="-fx-padding: 10;">
-                <TextFlow fx:id="outputFlow" />
+    xmlns:fx="http://javafx.com/fxml"
+    fx:controller="org.kpi.controller.TerminalController"
+    prefHeight="600.0" prefWidth="900.0">
 
-            </VBox>
-        </content>
-    </ScrollPane>
-</center>
+    <top>
+        <MenuBar fx:id="mainMenuBar"/>
+    </top>
 
+    <center>
+        <ScrollPane fx:id="scrollPane" fitToWidth="true">
+            <content>
+                <VBox fx:id="mainContainer" style="-fx-padding: 10;">
+                    <TextFlow fx:id="outputFlow" />
+                </VBox>
+            </content>
+        </ScrollPane>
+    </center>
 </BorderPane>

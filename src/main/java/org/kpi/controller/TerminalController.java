@@ -2,13 +2,19 @@ package org.kpi.controller;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import org.kpi.dao.DBConnection;
+import org.kpi.dao.SnippetDAO;
+import org.kpi.model.Snippet;
+import org.kpi.pattern.abstractFactory.SnippetUIFactory;
+import org.kpi.pattern.abstractFactory.UIFactory;
 import org.kpi.pattern.command.Command;
 import org.kpi.pattern.command.PowerShellExecuteCommand;
 import org.kpi.pattern.strategy.ColorTheme;
@@ -20,9 +26,9 @@ import org.kpi.util.Trie;
 import org.kpi.view.component.ReplInputArea;
 import org.kpi.pattern.interpreter.SyntaxHighlighter;
 import org.kpi.dao.CommandLogDAO;
-import org.kpi.model.CommandLog;
 
 import java.util.List;
+import java.util.Optional;
 
 public class TerminalController {
 
@@ -35,6 +41,8 @@ public class TerminalController {
     private TextFlow outputFlow;
     @FXML
     private ScrollPane scrollPane;
+    @FXML
+    private MenuBar mainMenuBar;
 
     private PowerShellSession session;
     // 2. HighLighter: інтерпретує вивід від PS (червоний/жовтий)
@@ -44,8 +52,12 @@ public class TerminalController {
     // ДОДАЄМО: DAO для роботи з базою
     private CommandLogDAO commandLogDAO;
 
+    private SnippetDAO snippetDAO;
+
     // ДОДАЄМО: Trie для автодоповнення
     private Trie commandTrie;
+
+    private UIFactory factory;
 
     @FXML
     public void initialize() {
@@ -53,7 +65,10 @@ public class TerminalController {
         // Створюємо клас Interpreter Pattern
         highlighter = new SyntaxHighlighter();
         commandLogDAO = new CommandLogDAO();
+        snippetDAO = new SnippetDAO();
         DBConnection.getInstance();
+
+        factory = new SnippetUIFactory();
 
         // НОВЕ: Ініціалізація Trie та завантаження команд
         commandTrie = new Trie();
@@ -61,9 +76,6 @@ public class TerminalController {
 
         // ПІДПИСКА НА ЗМІНУ ТЕМИ
         ThemeManager.getInstance().subscribe(this::repaintHistory); // <-- НОВИЙ РЯДОК
-
-        // Ініціалізуємо стиль при запуску
-        updateWindowStyle();
 
         // 1. Створюємо ReplInputArea: передаємо handleCommandExecution та getSuggestions
         // ЗВЕРНИ УВАГУ: Тепер ReplInputArea приймає ДВА параметри
@@ -74,6 +86,12 @@ public class TerminalController {
 
         // 3. Клік по вікну фокусує ввід
         mainContainer.setOnMouseClicked(e -> inputArea.requestFocus());
+
+        // НОВЕ: Ініціалізуємо меню
+        buildMenuBar();
+
+        // Ініціалізуємо стиль при запуску
+        updateWindowStyle();
 
         // 4. Налаштування сесії (вивід від PowerShell)
         session.setOutputHandler(text -> {
@@ -98,6 +116,157 @@ public class TerminalController {
 
         // Ініціалізуємо стиль при запуску
         updateWindowStyle();
+    }
+
+    // ОНОВЛЕНО: Додано пункт для створення сніпета та виклик оновлення меню
+    private void buildMenuBar() {
+        // Очищаємо, щоб уникнути дублікатів при оновленні
+        mainMenuBar.getMenus().clear();
+
+        // 1. Патерн Abstract Factory: Отримуємо фабрику
+
+        // Створюємо головне меню сніпетів
+        Menu snippetMenu = factory.createSnippetMenu();
+
+        // ДОДАНО: Керування сніпетами
+        MenuItem manageSnippetsItem = factory.createSnippetMenuItem("Керування сніпетами...", this::showManageSnippetsDialog);
+        snippetMenu.getItems().add(manageSnippetsItem);
+
+        // НОВИЙ ПУНКТ: Додати сніпет
+        MenuItem addSnippetItem = factory.createSnippetMenuItem("Додати сніпет...", this::showAddSnippetDialog);
+        snippetMenu.getItems().add(addSnippetItem);
+        snippetMenu.getItems().add(new SeparatorMenuItem()); // Роздільник
+
+        // 2. Завантажуємо сніпети з бази даних
+        List<Snippet> snippets = snippetDAO.findAll();
+
+        if (snippets.isEmpty()) {
+            snippetMenu.getItems().add(factory.createSnippetMenuItem("Сніпетів немає", () -> { /* Do nothing */ }));
+        } else {
+            for (Snippet snippet : snippets) {
+                // Створюємо елемент меню з дією, що вставляє текст
+                Runnable action = () -> insertSnippetText(snippet.getCommandBody());
+                snippetMenu.getItems().add(factory.createSnippetMenuItem(snippet.getTitle(), action));
+            }
+        }
+
+        // Додаємо меню до MenuBar
+        mainMenuBar.getMenus().add(snippetMenu);
+    }
+
+    /**
+     * НОВИЙ МЕТОД: Показує діалог для створення нового сніпета.
+     */
+    private void showAddSnippetDialog() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Додати новий сніпет");
+        dialog.setHeaderText("Введіть назву, команду та опис для сніпета.");
+
+        // Налаштування кнопок
+        ButtonType saveButtonType = new ButtonType("Зберегти", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+
+        // Налаштування полів вводу
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+
+        TextField titleField = new TextField();
+        titleField.setPromptText("Назва (напр., Get-Info)");
+
+        TextArea commandField = new TextArea();
+        commandField.setPromptText("Команда (напр., Get-ComputerInfo)");
+
+        TextArea descField = new TextArea();
+        descField.setPromptText("Опис (опціонально)");
+
+        // Розміщення елементів
+        grid.addRow(0, new Label("Назва:"), titleField);
+        grid.addRow(1, new Label("Команда:"), commandField);
+        grid.addRow(2, new Label("Опис:"), descField);
+
+        dialog.getDialogPane().setContent(grid);
+
+        // Обробка результату діалогу
+        Optional<ButtonType> result = dialog.showAndWait();
+
+        if (result.isPresent() && result.get() == saveButtonType) {
+            String title = titleField.getText().trim();
+            String command = commandField.getText().trim();
+            String desc = descField.getText().trim();
+
+            if (!title.isEmpty() && !command.isEmpty()) {
+                Snippet newSnippet = new Snippet();
+                newSnippet.setTitle(title);
+                newSnippet.setCommandBody(command);
+                newSnippet.setDescription(desc);
+
+                snippetDAO.save(newSnippet);
+
+                // Після збереження оновлюємо меню
+                buildMenuBar();
+            } else {
+                // Можна додати попередження, але поки обмежимося цим
+            }
+        }
+    }
+
+    /**
+     * НОВИЙ МЕТОД: Показує діалог для керування (видалення) сніпетами.
+     */
+    private void showManageSnippetsDialog() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Керування сніпетами");
+        dialog.setHeaderText("Виберіть сніпет для видалення.");
+
+        // Налаштування кнопок
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.CLOSE);
+
+        // Завантажуємо актуальний список сніпетів
+        List<Snippet> snippets = snippetDAO.findAll();
+
+        // Створення VBox для розміщення елементів
+        VBox content = new VBox(5);
+        content.setPrefWidth(500);
+
+        if (snippets.isEmpty()) {
+            content.getChildren().add(new Label("Немає збережених сніпетів."));
+        } else {
+            // Додавання кожного сніпета з кнопкою "Видалити"
+            for (Snippet snippet : snippets) {
+                HBox itemRow = new HBox(10);
+                itemRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+                Label titleLabel = new Label(snippet.getTitle());
+                titleLabel.setPrefWidth(200);
+
+                Button deleteButton = new Button("Видалити");
+                deleteButton.setStyle("-fx-base: #CC0000;"); // Червона кнопка
+
+                deleteButton.setOnAction(event -> {
+                    // Видалення сніпета з БД
+                    snippetDAO.delete(snippet.getId());
+
+                    // Закриваємо поточний діалог та оновлюємо меню
+                    dialog.close();
+                    buildMenuBar();
+                    // Відкриваємо діалог керування знову для оновлення
+                    Platform.runLater(this::showManageSnippetsDialog);
+                });
+
+                itemRow.getChildren().addAll(titleLabel, new Separator(), deleteButton);
+                content.getChildren().add(itemRow);
+            }
+        }
+
+        dialog.getDialogPane().setContent(content);
+        dialog.showAndWait();
+    }
+
+    // НОВИЙ МЕТОД: Вставляє текст сніпета у поле вводу (викликається з меню)
+    private void insertSnippetText(String command) {
+        // Використовуємо новий публічний метод у ReplInputArea
+        inputArea.insertText(command);
     }
 
     // Метод для зміни кольору фону вікна

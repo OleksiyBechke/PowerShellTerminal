@@ -270,6 +270,15 @@ public class ReplInputArea extends TextFlow {
         return cmd;
     }
 
+    /**
+     * Публічний метод для вставки тексту ззовні (наприклад, зі сніпета).
+     */
+    public void insertText(String text) {
+        inputBuffer.append(text);
+        refreshContent();
+        Platform.runLater(this::requestFocus); // Передаємо фокус назад
+    }
+
     private void startCaretBlinking() {
         Thread thread = new Thread(() -> {
             try {

@@ -9,8 +9,12 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import org.kpi.dao.DBConnection;
+import org.kpi.pattern.command.Command;
+import org.kpi.pattern.command.PowerShellExecuteCommand;
+import org.kpi.service.syntax.CommandLoader;
 import org.kpi.service.syntax.SyntaxTokenizer;
 import org.kpi.service.PowerShellSession;
+import org.kpi.util.Trie;
 import org.kpi.view.component.ReplInputArea;
 import org.kpi.pattern.interpreter.SyntaxHighlighter;
 import org.kpi.dao.CommandLogDAO;
@@ -38,6 +42,9 @@ public class TerminalController {
     // ДОДАЄМО: DAO для роботи з базою
     private CommandLogDAO commandLogDAO;
 
+    // ДОДАЄМО: Trie для автодоповнення
+    private Trie commandTrie;
+
     @FXML
     public void initialize() {
         session = new PowerShellSession();
@@ -46,8 +53,13 @@ public class TerminalController {
         commandLogDAO = new CommandLogDAO();
         DBConnection.getInstance();
 
-        // 1. Створюємо наше поле вводу
-        inputArea = new ReplInputArea(this::handleCommandExecution);
+        // НОВЕ: Ініціалізація Trie та завантаження команд
+        commandTrie = new Trie();
+        loadInitialCommands();
+
+        // 1. Створюємо ReplInputArea: передаємо handleCommandExecution та getSuggestions
+        // ЗВЕРНИ УВАГУ: Тепер ReplInputArea приймає ДВА параметри
+        inputArea = new ReplInputArea(this::handleCommandExecution, this::getSuggestions);
 
         // 2. Додаємо його в інтерфейс
         mainContainer.getChildren().add(inputArea);
@@ -69,25 +81,49 @@ public class TerminalController {
     private void handleCommandExecution() {
         String command = inputArea.getCommandAndClear();
 
-        if (command.trim().isEmpty()) { // Не зберігаємо порожні команди
+        if (command.trim().isEmpty()) {
             appendCommandEcho(command);
             return;
         }
 
-        // 1. СТВОРЕННЯ ЛОГУ І ЗБЕРЕЖЕННЯ В БД
-        try {
-            CommandLog log = new CommandLog(command);
-            commandLogDAO.save(log);
-        } catch (RuntimeException e) {
-            // Якщо БД недоступна (наприклад, сервер не запущено), виводимо помилку в термінал
-            appendColoredText("[DB ERROR] " + e.getMessage() + "\n", Color.RED);
-        }
-
-        // 2. Відображення
+        // 1. Відображення команди
         appendCommandEcho(command);
 
-        // 3. Виконання
-        session.execute(command);
+        // 2. СТВОРЕННЯ ТА ВИКОНАННЯ COMMAND ПАТЕРНУ
+        Command executeCommand = new PowerShellExecuteCommand(session, commandLogDAO, command);
+
+        try {
+            executeCommand.execute();
+        } catch (RuntimeException e) {
+            // Обробка помилок (наприклад, якщо БД відвалилася, але термінал має працювати)
+            appendColoredText("[APP ERROR] Command Execution Failed: " + e.getMessage() + "\n", Color.RED);
+        }
+    }
+
+    // НОВИЙ МЕТОД: Завантаження початкових команд
+    private void loadInitialCommands() {
+        CommandLoader loader = new CommandLoader();
+        List<String> dynamicCommands = loader.loadAllCommands(); // <-- ДИНАМІЧНИЙ ВИКЛИК
+
+        if (dynamicCommands.isEmpty() || dynamicCommands.size() < 10) {
+            // Fallback: Залишаємо мінімальний набір, якщо завантаження з PS не вдалося
+            dynamicCommands.add("dir");
+            dynamicCommands.add("cd");
+            dynamicCommands.add("exit");
+        }
+
+        for (String cmd : dynamicCommands) {
+            commandTrie.insert(cmd);
+        }
+        System.out.println("--- IntelliSense Trie Loaded (" + dynamicCommands.size() + " commands) ---");
+    }
+
+    // НОВИЙ МЕТОД: Викликається ReplInputArea для отримання підказок (Trie Search)
+    public List<String> getSuggestions(String prefix) {
+        if (prefix.isBlank()) return List.of();
+        // Беремо тільки перші 10 підказок
+        List<String> results = commandTrie.searchByPrefix(prefix);
+        return results.size() > 10 ? results.subList(0, 10) : results;
     }
 
     private void appendCommandEcho(String command) {
@@ -114,7 +150,6 @@ public class TerminalController {
         outputFlow.getChildren().add(textNode);
 
         // Скролимо вниз
-        scrollPane.layout();
         scrollPane.setVvalue(1.0);
     }
 

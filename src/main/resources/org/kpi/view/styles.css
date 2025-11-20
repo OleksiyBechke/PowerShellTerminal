@@ -18,3 +18,66 @@
     -fx-background-color: #007acc;
     -fx-text-fill: white;
 }
+
+/* --- Вкладки (TabPane) --- */
+
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: transparent;
+}
+
+/* === НЕАКТИВНА ВКЛАДКА (Світла) === */
+.tab {
+    -fx-background-color: #E0E0E0;
+    -fx-border-color: #A0A0A0;
+    -fx-border-width: 1px;
+}
+
+.tab .tab-label {
+    -fx-text-fill: #333333; /* Темний текст */
+    -fx-font-family: "Consolas";
+    -fx-font-weight: bold;
+}
+
+/* Ефект при наведенні на вкладку */
+.tab:hover {
+    -fx-background-color: #D0D0D0;
+}
+
+/* === АКТИВНА ВКЛАДКА (Темна) === */
+.tab:selected {
+    -fx-background-color: #1e1e1e;
+    -fx-background-insets: 0;
+    -fx-border-color: #333333;
+    -fx-border-bottom-color: #1e1e1e;
+}
+
+.tab:selected .tab-label {
+    -fx-text-fill: white; /* Білий текст */
+}
+
+/* --- КНОПКА ЗАКРИТТЯ (Хрестик) --- */
+.tab-close-button {
+    /* Хрестик на неактивній вкладці (Темний) */
+    -fx-background-color: #333333;
+
+    /* Форма хрестика з товщиною (полігон) */
+    -fx-shape: "M 0,0 L 2,0 L 5,3 L 8,0 L 10,0 L 10,2 L 7,5 L 10,8 L 10,10 L 8,10 L 5,7 L 2,10 L 0,10 L 0,8 L 3,5 L 0,2 Z";
+
+    /* Явно задаємо розмір, щоб його точно було видно */
+    -fx-min-width: 10px;
+    -fx-min-height: 10px;
+    -fx-max-width: 10px;
+    -fx-max-height: 10px;
+
+    -fx-cursor: hand;
+}
+
+/* Хрестик на активній вкладці (Білий) */
+.tab:selected .tab-close-button {
+    -fx-background-color: #ffffff;
+}
+
+/* Червоний при наведенні */
+.tab-close-button:hover {
+    -fx-background-color: #ff0000;
+}

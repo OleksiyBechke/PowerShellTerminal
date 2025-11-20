@@ -141,8 +141,15 @@ public class ReplInputArea extends TextFlow {
         });
 
         this.setOnKeyTyped(event -> {
+            // 1. Якщо затиснуто Ctrl або Alt (гарячі клавіші) - ігноруємо ввід тексту
+            if (event.isControlDown() || event.isAltDown()) {
+                return;
+            }
+
             String character = event.getCharacter();
-            if (character.length() > 0 && !character.equals("\r") && !character.equals("\b") && !character.equals("\t")) {
+            // 2. Перевіряємо, чи це друкований символ (код >= 32),
+            // щоб не малювати спецсимволи як квадратики
+            if (character.length() > 0 && character.charAt(0) >= 32) {
                 inputBuffer.append(character);
                 refreshContent();
             }

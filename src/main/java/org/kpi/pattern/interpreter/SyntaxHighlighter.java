@@ -1,6 +1,9 @@
 package org.kpi.pattern.interpreter;
 
 import javafx.scene.paint.Color;
+import org.kpi.pattern.strategy.ColorTheme;
+import org.kpi.pattern.strategy.ThemeManager;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +27,7 @@ public class SyntaxHighlighter {
      * @return Відповідний колір або Color.LIGHTGRAY за замовчуванням.
      */
     public Color determineColor(String outputText) {
+        ColorTheme theme = ThemeManager.getInstance().getTheme();
         for (Expression expr : expressions) {
             if (expr.interpret(outputText)) {
                 // Як тільки правило спрацювало, повертаємо його колір
@@ -31,6 +35,6 @@ public class SyntaxHighlighter {
             }
         }
         // Якщо жодне правило не спрацювало, це звичайний текст
-        return Color.LIGHTGRAY;
+        return theme.getTextColor();
     }
 }

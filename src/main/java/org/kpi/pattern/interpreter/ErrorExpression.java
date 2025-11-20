@@ -1,6 +1,7 @@
 package org.kpi.pattern.interpreter;
 
 import javafx.scene.paint.Color;
+import org.kpi.pattern.strategy.ThemeManager;
 
 public class ErrorExpression implements Expression {
     @Override
@@ -11,6 +12,6 @@ public class ErrorExpression implements Expression {
 
     @Override
     public Color getColor() {
-        return Color.RED;
+        return ThemeManager.getInstance().getTheme().getErrorColor();
     }
 }

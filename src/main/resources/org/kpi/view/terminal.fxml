@@ -9,13 +9,11 @@
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="org.kpi.controller.TerminalController"
             prefHeight="600.0" prefWidth="900.0"
-            style="-fx-background-color: #1e1e1e;"
             stylesheets="@styles.css"> <center>
-    <ScrollPane fx:id="scrollPane" fitToWidth="true"
-                style="-fx-background: #1e1e1e; -fx-background-color: #1e1e1e; -fx-border-color: transparent;">
+    <ScrollPane fx:id="scrollPane" fitToWidth="true">
         <content>
-            <VBox fx:id="mainContainer" style="-fx-background-color: #1e1e1e; -fx-padding: 10;">
-                <TextFlow fx:id="outputFlow" style="-fx-background-color: #1e1e1e;" />
+            <VBox fx:id="mainContainer" style="-fx-padding: 10;">
+                <TextFlow fx:id="outputFlow" />
 
             </VBox>
         </content>

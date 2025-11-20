@@ -10,6 +10,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Popup;
+import org.kpi.pattern.strategy.ColorTheme;
+import org.kpi.pattern.strategy.ThemeManager;
 import org.kpi.service.syntax.SyntaxTokenizer;
 
 import java.util.List;
@@ -35,8 +37,12 @@ public class ReplInputArea extends TextFlow {
 
         this.setStyle("-fx-background-color: transparent; -fx-padding: 5 0 5 0;");
 
+        // 1. Отримуємо тему для ініціалізації
+        ColorTheme theme = ThemeManager.getInstance().getTheme();
+
         this.caret = new Line(0, 0, 0, 14);
-        this.caret.setStroke(Color.WHITE);
+        // ВИКОРИСТОВУЄМО КОЛІР КУРСОРУ З ТЕМИ
+        this.caret.setStroke(theme.getCursorColor());
         this.caret.setStrokeWidth(2);
         startCaretBlinking();
 
@@ -143,6 +149,9 @@ public class ReplInputArea extends TextFlow {
         });
 
         refreshContent();
+
+        // Підписуємось на зміну теми: коли тема міняється -> перемалювати текст
+        org.kpi.pattern.strategy.ThemeManager.getInstance().subscribe(this::refreshContent);
     }
 
     private void applySuggestion() {
@@ -219,8 +228,15 @@ public class ReplInputArea extends TextFlow {
     private void refreshContent() {
         this.getChildren().clear();
 
+        // Отримуємо кольори з поточної теми
+        ColorTheme theme = ThemeManager.getInstance().getTheme();
+        Color promptColor = theme.getPromptColor();
+
+        // НОВИЙ РЯДОК: ОНОВЛЮЄМО КОЛІР КУРСОРУ З ТЕМИ
+        this.caret.setStroke(theme.getCursorColor());
+
         Text prompt = new Text("PS User> ");
-        prompt.setFill(Color.LIGHTGREEN);
+        prompt.setFill(promptColor);
         prompt.setFont(Font.font("Consolas", 14));
         this.getChildren().add(prompt);
 

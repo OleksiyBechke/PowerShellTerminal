@@ -3,6 +3,8 @@ package org.kpi.service.syntax;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import org.kpi.pattern.strategy.ColorTheme;
+import org.kpi.pattern.strategy.ThemeManager;
 import org.kpi.service.syntax.PowerShellSyntax;
 
 import java.util.ArrayList;
@@ -20,37 +22,38 @@ public class SyntaxTokenizer {
         List<Text> nodes = new ArrayList<>();
         Matcher matcher = PowerShellSyntax.TOKEN_PATTERN.matcher(text);
 
+        // ОТРИМУЄМО ПОТОЧНУ ТЕМУ
+        ColorTheme theme = ThemeManager.getInstance().getTheme();
+
         int lastEnd = 0;
         boolean expectingCommand = initialExpectCommand;
 
         while (matcher.find()) {
-            // 1. Додаємо пробіли або звичайний текст між токенами
             if (matcher.start() > lastEnd) {
-                nodes.add(createColoredText(text.substring(lastEnd, matcher.start()), Color.WHITE));
+                // Пробіли використовують колір аргументів (або background, але краще аргументів)
+                nodes.add(createColoredText(text.substring(lastEnd, matcher.start()), theme.getArgumentColor()));
             }
 
-            Color color = Color.WHITE; // Дефолтний колір
+            Color color = theme.getArgumentColor(); // Дефолтний колір з теми
 
-            // 2. Логіка підсвічування (Interpreter Heuristic)
             if (matcher.group(1) != null) { // String
-                color = Color.CYAN;
-                if(expectingCommand) {
-                    expectingCommand = true;
-                } else {
-                    expectingCommand = false;
-                }
+                color = theme.getStringColor(); // <-- ТЕМА
+                if (expectingCommand) expectingCommand = true; else expectingCommand = false;
+
             } else if (matcher.group(2) != null) { // Parameter
-                color = Color.GRAY;
+                color = theme.getParameterColor(); // <-- ТЕМА
                 expectingCommand = false;
-            } else if (matcher.group(3) != null) { // Pipe (|)
-                color = Color.WHITE; // Як ми домовились
+
+            } else if (matcher.group(3) != null) { // Pipe
+                color = theme.getPipeColor(); // <-- ТЕМА
                 expectingCommand = true;
+
             } else if (matcher.group(4) != null) { // Generic Word
                 if (expectingCommand) {
-                    color = Color.YELLOW;
+                    color = theme.getCommandColor(); // <-- ТЕМА
                     expectingCommand = false;
                 } else {
-                    color = Color.WHITE;
+                    color = theme.getArgumentColor(); // <-- ТЕМА
                 }
             }
 
@@ -58,9 +61,9 @@ public class SyntaxTokenizer {
             lastEnd = matcher.end();
         }
 
-        // 3. Додаємо залишок тексту після останнього знайденого токена
         if (lastEnd < text.length()) {
-            nodes.add(createColoredText(text.substring(lastEnd), Color.WHITE));
+            // Хвіст теж беремо з теми
+            nodes.add(createColoredText(text.substring(lastEnd), theme.getArgumentColor()));
         }
 
         return nodes;

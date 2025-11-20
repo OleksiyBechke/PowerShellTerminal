@@ -1,0 +1,8 @@
+CREATE DATABASE IF NOT EXISTS powershell_terminal;
+USE powershell_terminal;
+
+CREATE TABLE IF NOT EXISTS command_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    command_text TEXT NOT NULL,
+    executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

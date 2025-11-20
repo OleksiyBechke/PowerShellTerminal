@@ -8,10 +8,13 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
+import org.kpi.dao.DBConnection;
 import org.kpi.service.syntax.SyntaxTokenizer;
 import org.kpi.service.PowerShellSession;
 import org.kpi.view.component.ReplInputArea;
-import org.kpi.pattern.interpreter.SyntaxHighlighter; // <-- КЛАС З ПАТЕРНОМ INTERPRETER (ПОВИНЕН БУТИ ТУТ)
+import org.kpi.pattern.interpreter.SyntaxHighlighter;
+import org.kpi.dao.CommandLogDAO;
+import org.kpi.model.CommandLog;
 
 import java.util.List;
 
@@ -32,11 +35,16 @@ public class TerminalController {
     private SyntaxHighlighter highlighter;
     private ReplInputArea inputArea;
 
+    // ДОДАЄМО: DAO для роботи з базою
+    private CommandLogDAO commandLogDAO;
+
     @FXML
     public void initialize() {
         session = new PowerShellSession();
         // Створюємо клас Interpreter Pattern
         highlighter = new SyntaxHighlighter();
+        commandLogDAO = new CommandLogDAO();
+        DBConnection.getInstance();
 
         // 1. Створюємо наше поле вводу
         inputArea = new ReplInputArea(this::handleCommandExecution);
@@ -60,7 +68,25 @@ public class TerminalController {
 
     private void handleCommandExecution() {
         String command = inputArea.getCommandAndClear();
+
+        if (command.trim().isEmpty()) { // Не зберігаємо порожні команди
+            appendCommandEcho(command);
+            return;
+        }
+
+        // 1. СТВОРЕННЯ ЛОГУ І ЗБЕРЕЖЕННЯ В БД
+        try {
+            CommandLog log = new CommandLog(command);
+            commandLogDAO.save(log);
+        } catch (RuntimeException e) {
+            // Якщо БД недоступна (наприклад, сервер не запущено), виводимо помилку в термінал
+            appendColoredText("[DB ERROR] " + e.getMessage() + "\n", Color.RED);
+        }
+
+        // 2. Відображення
         appendCommandEcho(command);
+
+        // 3. Виконання
         session.execute(command);
     }
 
